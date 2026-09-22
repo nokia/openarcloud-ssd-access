@@ -157,7 +157,7 @@ export async function getServicesAtLocation(countryCode: string, h3Index: string
         return localServices;
     }
 
-    if (countryCode === undefined || countryCode === '' || h3Index === undefined || countryCode === '') {
+    if (countryCode === undefined || countryCode === '' || h3Index === undefined || h3Index === '') {
         throw new Error(`Check parameters: ${countryCode} ${h3Index}`);
     }
 
@@ -195,18 +195,22 @@ export async function searchServicesForProducer(countryCode: string, token: stri
 /**
  * Post a single service record (SSR) to the server in the provided region
  *
+ * Accepts an SSR object or a JSON string (string form kept for one-release compatibility).
+ * `token` may be empty when the backend runs with auth disabled.
+ *
  * When the global variable `local` is set to true, no server access is done, but an immediate ok returned.
  */
-export async function postService(countryCode: string, ssr: string, token: string): Promise<string> {
+export async function postService(countryCode: string, ssr: SSR | string, token: string = ''): Promise<string> {
     if (local) {
         return 'OK';
     }
 
-    if (ssr === undefined || ssr.length === 0 || token === undefined || token.length === 0) {
+    const body = typeof ssr === 'string' ? ssr : JSON.stringify(ssr);
+    if (ssr === undefined || body.length === 0) {
         throw new Error(`Check parameters: ${ssr}, ${token}`);
     }
 
-    const response = await request(`${ssdUrl}/${countryCode}/${ssrsPath}`, POST_METHOD, ssr, token);
+    const response = await request(`${ssdUrl}/${countryCode}/${ssrsPath}`, POST_METHOD, body, token);
     return await response.text();
 }
 
@@ -223,17 +227,21 @@ export async function postSsrFile(countryCode: string, file: File, token: string
 
 /**
  * Put a single service record (SSR) to the server in the provided region
+ *
+ * Accepts an SSR object or a JSON string (string form kept for one-release compatibility).
+ * `token` may be empty when the backend runs with auth disabled.
  */
-export async function putService(countryCode: string, ssr: string, id: string, token: string): Promise<string> {
+export async function putService(countryCode: string, ssr: SSR | string, id: string, token: string = ''): Promise<string> {
     if (local) {
         return 'OK';
     }
 
-    if (ssr === undefined || ssr.length === 0 || id === undefined || id.length === 0 || token === undefined || token.length === 0) {
+    const body = typeof ssr === 'string' ? ssr : JSON.stringify(ssr);
+    if (ssr === undefined || body.length === 0 || id === undefined || id.length === 0) {
         throw new Error(`Check parameters: ${ssr}, ${id} ${token}`);
     }
 
-    const response = await request(`${ssdUrl}/${countryCode}/${ssrsPath}/${id}`, PUT_METHOD, ssr, token);
+    const response = await request(`${ssdUrl}/${countryCode}/${ssrsPath}/${id}`, PUT_METHOD, body, token);
     return await response.text();
 }
 
