@@ -270,7 +270,9 @@ export function validateSsr(scr: string, fileName = '') {
  */
 async function request(url: string, method = GET_METHOD, body = '', token: string | undefined = undefined) {
     let headers = new Headers();
-    headers.append('accept', 'application/vnd.oscp+json; version=1.0;');
+    // The OSCP type should be application/vnd.oscp+json; version=1.0, but we also accept application/json
+    // to be compatible with older SSD services.
+    headers.append('accept', 'application/json, application/vnd.oscp+json; version=1.0');
     headers.append('content-type', 'application/json');
 
     if (token) {
@@ -285,7 +287,10 @@ async function request(url: string, method = GET_METHOD, body = '', token: strin
 
     const response = await fetch(url, options);
     if (!response.ok) {
-        throw new Error(`${await response.text()}, ${response.statusText}`);
+        const detail = await response.text();
+        throw new Error(
+            `${method.toUpperCase()} ${url} failed (${response.status} ${response.statusText})${detail ? `: ${detail}` : ''}`,
+        );
     }
     return response;
 }
