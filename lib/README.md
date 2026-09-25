@@ -8,6 +8,11 @@ Spatial Content Discovery
 - [https://github.com/OpenArCloud/oscp-spatial-content-discovery](https://github.com/OpenArCloud/oscp-spatial-content-discovery)
 
 
+### New with version 0.5.0:
+- **Breaking:** removed the hardcoded `supportedCountries` HTML datalist.
+- `getSupportedCountries(baseUrl?)` requests `GET /countries` from that SSD instance. Omit `baseUrl` to use the URL from `setSsdUrl`. Lists are cached per server URL.
+- `isSupportedCountry(country, baseUrl?)` checks one code against that same server, case-insensitively.
+
 ### New with version 0.4.1:
 - Requests accept `application/json` as well as `application/vnd.oscp+json; version=1.0`, so gateways that reject the vendor type alone still return service records.
 - Failed requests include the method, URL, status, and response body.
@@ -42,6 +47,12 @@ Spatial Content Discovery
 
 
 ### Currently available functions are:
+    function getSupportedCountries(baseUrl?)
+Requests the ISO country codes served by one SSD instance (`GET /countries`)
+
+    function isSupportedCountry(country, baseUrl?)
+Returns whether that SSD instance serves the country code
+
     function getServicesAtLocation(countryCode, h3Index)
 Requests services available around H3Index from the regional server for the provided countryCode
 

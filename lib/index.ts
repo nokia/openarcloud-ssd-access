@@ -109,19 +109,8 @@ export const ssr_service: Service = {
     properties: [],
 };
 
-// TODO: this list should be queried from the actual server
-export const supportedCountries = `
-    <datalist id="supported-countries">
-        <option value="us">
-        <option value="it">
-        <option value="fi">
-        <option value="se">
-        <option value="hu">
-        <option value="de">
-        <option value="uk">
-        <option value="hk">
-        <option value="tr">
-    </datalist>`;
+/** Country lists already fetched, keyed by SSD base URL. */
+const supportedCountriesByServer = new Map<string, string[]>();
 
 export const availableServiceTypes = ['GeoPose', 'Content-Discovery', 'P2P-Master', 'Message-Broker'];
 
@@ -142,6 +131,52 @@ export function setSsdUrl(url: string) {
 
 export function setSsrsPath(path: string) {
     ssrsPath = path;
+}
+
+function resolveBaseUrl(baseUrl?: string): string {
+    const url = (baseUrl ?? ssdUrl).trim().replace(/\/+$/, '');
+    if (url === '') {
+        throw new Error('SSD URL is not set');
+    }
+    return url;
+}
+
+function parseCountryList(payload: unknown, url: string): string[] {
+    if (!Array.isArray(payload) || payload.some((country) => typeof country !== 'string' || country.trim() === '')) {
+        throw new Error(`GET ${url}/countries returned an invalid country list`);
+    }
+    return payload.map((country) => country.trim().toUpperCase());
+}
+
+/**
+ * ISO country codes served by one SSD instance.
+ *
+ * `baseUrl` selects the server. When it is omitted, the URL from `setSsdUrl` is used.
+ * Results are cached per server, so several SSD hosts keep separate lists.
+ */
+export async function getSupportedCountries(baseUrl?: string): Promise<string[]> {
+    const url = resolveBaseUrl(baseUrl);
+    const cached = supportedCountriesByServer.get(url);
+    if (cached) {
+        return [...cached];
+    }
+
+    const response = await request(`${url}/countries`);
+    const countries = parseCountryList(await response.json(), url);
+    supportedCountriesByServer.set(url, countries);
+    return [...countries];
+}
+
+/**
+ * Whether `country` is served by the SSD instance at `baseUrl` (or `setSsdUrl` when omitted).
+ * Comparison is case-insensitive, matching the server's uppercasing of country path parameters.
+ */
+export async function isSupportedCountry(country: string, baseUrl?: string): Promise<boolean> {
+    if (country === undefined || country.trim() === '') {
+        return false;
+    }
+    const countries = await getSupportedCountries(baseUrl);
+    return countries.includes(country.trim().toUpperCase());
 }
 
 /**
